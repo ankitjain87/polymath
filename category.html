@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="style.css">
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+    </head>
+    <body>
+        <div>
+            <h2>Category tree for {{ data['category_id'] }}</h2>
+            <label> CategoryID : {{ data['category_id'] }} | CategoryName : {{ data['name'] }} | CategoryLevel : {{ data['level'] }} | BestOfferEnabled : {{ data['best_offer'] }} </label>
+            <ul>
+            {% for node in data['children'] %}
+                {% include "tree_view_template.html" %}
+            {% endfor %}
+            </ul>
+        </div>
+    </body>
+
+<script type="text/javascript">
+    $(".Collapsable label").click(function () {
+        if ($(this).parent().hasClass('open')) {
+            $(this).parent().removeClass('open');
+        } else {
+            $(this).parent().addClass('open');
+        }
+    });
+</script>
+</html>

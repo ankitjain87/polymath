@@ -1,0 +1,23 @@
+<li>
+    {% if node.children %}
+        <span class="Collapsable hascontent">
+    {% else %}
+        <span class="Collapsable">
+    {% endif %}
+    <label>
+        CategoryID : {{ node['category_id'] }}<br>
+        CategoryName : {{ node['name'] }}<br>
+        CategoryLevel : {{ node['level'] }}<br>
+        BestOfferEnabled : {{ node['best_offer'] }}<br>
+    </label>
+    {% if node.children %}
+        <ul>
+            {%for ch in node.children %}
+                {% with node = ch %}
+                    {% include "tree_view_template.html" %}
+                {% endwith %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+    </span>
+</li>

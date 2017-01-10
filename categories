@@ -1,0 +1,100 @@
+#!/usr/bin/env python
+
+from bs4 import BeautifulSoup
+import jinja2
+import os
+import sys
+
+import config
+import utils
+
+
+def rebuild():
+    utils.drop_category_table()
+    utils.create_category_table()
+
+    category_data = utils.dispatch_http_post_request(
+        config.EBAY_API, config.CATEGORY_REQUEST_FORMAT % config.TOKEN,
+        config.HEADERS)
+
+    if category_data.status_code == 200:
+        soup = BeautifulSoup(category_data.text, 'lxml')
+        category_records = []
+        category_tags = soup.find_all('category')
+        for cat in category_tags:
+            best_offer = None
+            if cat.bestofferenabled:
+                best_offer = True if cat.bestofferenabled.getText() == 'true' else False
+
+            record = (
+                cat.categoryid.getText(), cat.categorylevel.getText(),
+                cat.categoryname.getText(), cat.categoryparentid.getText(),
+                best_offer)
+            category_records.append(record)
+
+    utils.insert_category_data(category_records)
+
+def get_children(category_id):
+    children_list = []
+    children = utils.get_category_children(category_id)
+    for child in children:
+        data = {}
+        data['category_id'] = child[1]
+        data['name'] = child[3]
+        data['level'] = child[2]
+        data['best_offer'] = "true" if child[5] else "false"
+
+        if child[1] != child[4]:
+            data['children'] = get_children(child[1])
+
+        children_list.append(data)
+
+    return children_list
+
+def generate_category_html(data):
+    env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(os.path.dirname('__file__')),
+        extensions=['jinja2.ext.autoescape'],
+        autoescape=True)
+    template = env.get_template('category.html')
+    output = template.render(data=data)
+
+    with open(str(data['category_id']) + '.html', 'w') as new_file:
+        new_file.write(output)
+
+def render(category_id):
+    if not utils.is_db_exists:
+        print('DB does not exists.')
+        exit(1)
+    if not utils.is_table_exists:
+        print('Category table does not exists.')
+        exit(1)
+
+    parent = utils.get_category_data(category_id)
+    if len(parent) == 0:
+        print('Category %s does not exists.' % category_id)
+        exit(1)
+
+    parent = parent[0]
+    category_tree = {}
+    category_tree['category_id'] = parent[1]
+    category_tree['name'] = parent[3]
+    category_tree['level'] = parent[2]
+    category_tree['best_offer'] = "true" if parent[5] else "false"
+    category_tree['children'] = get_children(parent[1])
+
+    generate_category_html(category_tree)
+
+
+if len(sys.argv) > 1:
+    if sys.argv[1] == '--rebuild':
+        rebuild()
+    elif sys.argv[1] == '--render':
+        if len(sys.argv) != 3:
+            print("CategoryId is missing in argument.")
+        else:
+            render(int(sys.argv[2]))
+    else:
+        print("Invalid input.")
+else:
+    print("Please provide argument(s)")

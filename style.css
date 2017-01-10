@@ -1,0 +1,32 @@
+
+.Collapsable.open > ul{
+  display: block;
+}
+.Collapsable > label::before{
+  content: '0';
+  visibility: hidden;
+}
+.Collapsable.hascontent > label::before{
+  visibility: visible;
+}
+.Collapsable.open.hascontent > label::before{
+  content: '-';
+  font-weight: bold;
+  
+}
+.Collapsable.hascontent >label::before{
+  content: '+';
+  font-weight: bold;
+}
+.Collapsable > ul{
+  
+  display: none;
+}
+ul li{
+  margin: 10px 0;
+}
+label{
+  margin: 0 5px;
+  display: block;
+  cursor: pointer;
+}
